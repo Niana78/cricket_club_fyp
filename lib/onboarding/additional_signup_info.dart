@@ -1,8 +1,13 @@
 import 'dart:convert';
-import 'package:cric_club/dashboard/player/home_player.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:cric_club/configurations/config.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http_parser/http_parser.dart' as http_parser;
+import 'package:file_picker/file_picker.dart';
+
+import '../configurations/config.dart';
+import 'otp-verification/otp_verif_player.dart';
 
 class OptionalOnboarding extends StatefulWidget {
   const OptionalOnboarding({
@@ -34,13 +39,49 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
   final _formKey = GlobalKey<FormState>();
   final List<String> _organizations = [];
   final TextEditingController _organizationController = TextEditingController();
-
-
   final TextEditingController _cnicController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _organizationsController = TextEditingController();
 
+  XFile? _cnicFrontImage;
+  XFile? _cnicBackImage;
+  PlatformFile? _experienceDoc;
   bool _isLoading = false;
+
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickCnicFrontImage() async {
+    final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      setState(() {
+        _cnicFrontImage = pickedImage;
+      });
+    }
+  }
+
+  Future<void> _pickCnicBackImage() async {
+    final XFile? pickedImage = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      setState(() {
+        _cnicBackImage = pickedImage;
+      });
+    }
+  }
+
+  Future<PlatformFile?> _pickExperienceDocument() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx'],
+    );
+    if (result != null) {
+      PlatformFile file = result.files.first;
+      setState(() {
+        _experienceDoc = file;
+      });
+      return file;
+    } else {
+      return null;
+    }
+  }
 
   void signUpUser() async {
     if (_formKey.currentState?.validate() != true) return;
@@ -55,36 +96,61 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
         "email": widget.email,
         "password": widget.password,
         "dateOfBirth": widget.dob,
-        "gender": widget.gender,
+        "gender": widget.gender ?? '',
         "contactNumber": widget.contactNumber,
         "address": _addressController.text,
-        "country": _country,
-        "category": _category,
-        // "cnic": _cnicController.text,
+        "country": _country ?? '',
+        "category": _category ?? '',
         "affiliatedOrganizations": _organizations,
       };
 
-      var response = await http.post(
-        Uri.parse(registration),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(reqBody),
-      );
+      var request = http.MultipartRequest('POST', Uri.parse(registration))
+        ..fields.addAll(reqBody.map((key, value) => MapEntry(key, value is List ? jsonEncode(value) : value.toString())))
+        ..headers.addAll({"Content-Type": "application/json"});
+
+      if (_cnicFrontImage != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'cnicFront',
+          _cnicFrontImage!.path,
+          contentType: http_parser.MediaType('image', 'jpeg'),
+        ));
+      }
+
+      if (_cnicBackImage != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'cnicBack',
+          _cnicBackImage!.path,
+          contentType: http_parser.MediaType('image', 'jpeg'),
+        ));
+      }
+
+      if (_experienceDoc != null) {
+        request.files.add(http.MultipartFile(
+          'experienceDocument',
+          File(_experienceDoc!.path!).readAsBytes().asStream(),
+          File(_experienceDoc!.path!).lengthSync(),
+          filename: _experienceDoc!.name,
+          contentType: http_parser.MediaType('application', 'octet-stream'),
+        ));
+      }
+
+      var response = await request.send();
 
       print("Request URL: $registration");
       print("Request Body: $reqBody");
       print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${response.body}");
+      print("Response Body: ${await response.stream.bytesToString()}");
 
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("User registered successfully!")),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const PlayerHome()),
+          MaterialPageRoute(builder: (context) => EmailVerification(email: widget.email)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to register user: ${response.body}")),
+          SnackBar(content: Text("Failed to register user: ${response.reasonPhrase}")),
         );
       }
     } catch (error) {
@@ -110,9 +176,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(
-                  height: 70,
-                ),
+                const SizedBox(height: 70),
                 const Center(
                   child: Text(
                     "Continue Your Sign Up Process",
@@ -129,12 +193,11 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                       borderRadius: BorderRadius.circular(18),
                       color: Colors.white),
                   width: 400,
-                  height: 500,
+                  height: 600,
                   child: Form(
                     key: _formKey,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16),
                       child: ListView(
                         shrinkWrap: true,
                         children: [
@@ -146,20 +209,16 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               labelStyle: TextStyle(color: Colors.black),
                               hintStyle: TextStyle(color: Colors.black),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 3.0),
+                                borderSide: BorderSide(color: Colors.black, width: 3.0),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               errorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                               focusedErrorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                             ),
                             validator: (value) {
@@ -170,15 +229,12 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          const Text(
-                            'CNIC Picture:',
-                            style: TextStyle(color: Colors.black),
-                          ),
+                          const Text('CNIC Picture:', style: TextStyle(color: Colors.black)),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: _pickCnicFrontImage,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: customColor3,
                                   shape: RoundedRectangleBorder(
@@ -186,12 +242,11 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                                   ),
                                   fixedSize: const Size(140, 40),
                                 ),
-                                child: const Text('Upload Front',
-                                    style: TextStyle(color: Colors.white)),
+                                child: const Text('Upload Front', style: TextStyle(color: Colors.white)),
                               ),
                               const SizedBox(width: 16),
                               ElevatedButton(
-                                onPressed: () {},
+                                onPressed: _pickCnicBackImage,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: customColor3,
                                   shape: RoundedRectangleBorder(
@@ -199,11 +254,15 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                                   ),
                                   fixedSize: const Size(140, 40),
                                 ),
-                                child: const Text('Upload Back',
-                                    style: TextStyle(color: Colors.white)),
+                                child: const Text('Upload Back', style: TextStyle(color: Colors.white)),
                               ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+                          if (_cnicFrontImage != null)
+                            Image.file(File(_cnicFrontImage!.path), height: 100),
+                          if (_cnicBackImage != null)
+                            Image.file(File(_cnicBackImage!.path), height: 100),
                           const SizedBox(height: 16),
                           TextFormField(
                             style: const TextStyle(color: Colors.black),
@@ -213,20 +272,16 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               labelStyle: TextStyle(color: Colors.black),
                               hintStyle: TextStyle(color: Colors.black),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               errorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                               focusedErrorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                             ),
                             validator: (value) {
@@ -242,20 +297,16 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               labelText: 'Country',
                               labelStyle: TextStyle(color: Colors.black),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               errorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                               focusedErrorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                             ),
                             value: _country,
@@ -288,8 +339,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               ].map<Widget>((String value) {
                                 return Text(
                                   value,
-                                  style: const TextStyle(
-                                      color: Colors.black),
+                                  style: const TextStyle(color: Colors.black),
                                 );
                               }).toList();
                             },
@@ -307,20 +357,16 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               labelText: 'Category',
                               labelStyle: TextStyle(color: Colors.black),
                               enabledBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               focusedBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.black, width: 2.0),
+                                borderSide: BorderSide(color: Colors.black, width: 2.0),
                               ),
                               errorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                               focusedErrorBorder: UnderlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Colors.red, width: 2.0),
+                                borderSide: BorderSide(color: Colors.red, width: 2.0),
                               ),
                             ),
                             value: _category,
@@ -341,8 +387,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     value,
-                                    style: const TextStyle(
-                                        color: Colors.black),
+                                    style: const TextStyle(color: Colors.black),
                                   ),
                                 ),
                               );
@@ -356,8 +401,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               ].map<Widget>((String value) {
                                 return Text(
                                   value,
-                                  style: const TextStyle(
-                                      color: Colors.black),
+                                  style: const TextStyle(color: Colors.black),
                                 );
                               }).toList();
                             },
@@ -376,7 +420,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                           ),
                           const SizedBox(height: 8),
                           ElevatedButton(
-                            onPressed: () {},
+                            onPressed: _pickExperienceDocument,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: customColor3,
                               shape: RoundedRectangleBorder(
@@ -389,6 +433,12 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               style: TextStyle(color: Colors.white),
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          if (_experienceDoc != null)
+                            Text(
+                              'Document Selected: ${_experienceDoc!.name}',
+                              style: const TextStyle(color: Colors.black),
+                            ),
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _organizationController,
@@ -456,9 +506,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                                   fontWeight: FontWeight.w700),
                             ),
                           ),
-                          const SizedBox(
-                            height: 20,
-                          )
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),

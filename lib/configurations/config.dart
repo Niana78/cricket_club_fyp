@@ -1,9 +1,11 @@
-const url='http://172.16.176.112:5000/api/users/';
-const cluburl='http://172.16.176.112:5000/api/clubs/';
+const url='http://192.168.7.105:5000/api/users/';
+const cluburl='http://192.168.7.105:5000/api/clubs/';
 
 //player
 const registration = "${url}signup";
 const login = "${url}login";
+const otplogin = "${url}otp-login";
+const otpverify = "${url}otp-verify";
 
 
 //club
