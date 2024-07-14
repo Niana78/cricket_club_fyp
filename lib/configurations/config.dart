@@ -11,4 +11,5 @@ const otpverify = "${url}otp-verify";
 //club
 const clublogin = "${cluburl}login";
 const clubregistration ="${cluburl}signup";
+const reqforregistration = "${cluburl}send-request";
 

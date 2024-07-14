@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cric_club/configurations/config.dart';
 import 'package:cric_club/dashboard/club/home_club.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart'as http;
+import 'package:http/http.dart' as http;
+import 'package:file_picker/file_picker.dart';
+import 'package:http_parser/http_parser.dart' as http_parser;
 
 class ClubSignUpScreen extends StatefulWidget {
   const ClubSignUpScreen({super.key});
@@ -20,43 +23,103 @@ class _ClubSignUpScreenState extends State<ClubSignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _contactNumberController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-  TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
   String? _organizationType;
   String? _country;
 
   Color customColor1 = const Color(0xff0F2630);
   Color customColor3 = const Color(0xFF088395);
+  PlatformFile? _registrationDoc;
+
+  Future<void> _pickRegistrationDocument() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+    );
+    if (result != null) {
+      setState(() {
+        _registrationDoc = result.files.first;
+      });
+    }
+  }
+
+  Future<void> _sendRequest() async {
+    var request = http.MultipartRequest('POST', Uri.parse(reqforregistration))
+      ..fields['name'] = _organizationNameController.text
+      ..fields['email'] = _emailController.text
+      ..fields['password'] = _passwordController.text
+      ..fields['contactNumber'] = _contactNumberController.text
+      ..fields['address'] = _headOfficeLocationController.text
+      ..fields['country'] = _country ?? ''
+    // ..fields['organizationType'] = _organizationType ?? ''
+      ..fields['profilePictureUrl'] = 'url_to_profile_picture';
+
+    if (_registrationDoc != null) {
+      request.files.add(
+        http.MultipartFile(
+          'registrationDoc',
+          File(_registrationDoc!.path!).readAsBytes().asStream(),
+          File(_registrationDoc!.path!).lengthSync(),
+          filename: _registrationDoc!.name,
+          contentType: http_parser.MediaType('application', 'pdf'),
+        ),
+      );
+    }
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode != 201) {
+      print('Failed to send request: $responseBody');
+      throw Exception('Failed to send request: $responseBody');
+    }
+  }
 
   Future<void> _submitForm() async {
     if (_formKey.currentState?.validate() == true) {
-      final response = await http.post(
-        Uri.parse(clubregistration),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, dynamic>{
-          'name': _organizationNameController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
-          'contactNumber': _contactNumberController.text,
-          'address': _headOfficeLocationController.text,
-          'country': _country,
-          'registrationDoc': 'url_to_registration_doc',
-          'profilePictureUrl': 'url_to_profile_picture',
-        }),
-      );
+      try {
+        await _sendRequest();
 
-      if (response.statusCode == 201) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const ClubHome(),
-          ),
-        );
-      } else {
+        var request = http.MultipartRequest('POST', Uri.parse(clubregistration))
+          ..fields['name'] = _organizationNameController.text
+          ..fields['email'] = _emailController.text
+          ..fields['password'] = _passwordController.text
+          ..fields['contactNumber'] = _contactNumberController.text
+          ..fields['address'] = _headOfficeLocationController.text
+          ..fields['country'] = _country ?? ''
+        // ..fields['organizationType'] = _organizationType ?? ''
+          ..fields['profilePictureUrl'] = 'url_to_profile_picture';
+
+        if (_registrationDoc != null) {
+          request.files.add(
+            http.MultipartFile(
+              'registrationDoc',
+              File(_registrationDoc!.path!).readAsBytes().asStream(),
+              File(_registrationDoc!.path!).lengthSync(),
+              filename: _registrationDoc!.name,
+              contentType: http_parser.MediaType('application', 'pdf'),
+            ),
+          );
+        }
+
+        final response = await request.send();
+        final responseBody = await response.stream.bytesToString();
+
+        if (response.statusCode == 201) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const ClubHome(),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to sign up: $responseBody')),
+          );
+        }
+      } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to sign up: ${response.reasonPhrase}')),
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     }
@@ -201,7 +264,7 @@ class _ClubSignUpScreenState extends State<ClubSignUpScreen> {
                                   .map<Widget>((String value) {
                                 return Text(
                                   value,
-                                  style: const TextStyle(color: Colors.black), // Text style for the selected item
+                                  style: const TextStyle(color: Colors.black),
                                 );
                               }).toList();
                             },
@@ -313,9 +376,7 @@ class _ClubSignUpScreenState extends State<ClubSignUpScreen> {
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
-                            onPressed: () {
-                              // Implement document upload functionality here
-                            },
+                            onPressed: _pickRegistrationDocument,
                             icon: Icon(Icons.upload_file, color: customColor3),
                             label: Text(
                               'Upload Organization Registration Documents',
@@ -399,7 +460,6 @@ class _ClubSignUpScreenState extends State<ClubSignUpScreen> {
                                 },
                               ),
                             ),
-
                             obscureText: !_isPasswordVisible,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -448,7 +508,6 @@ class _ClubSignUpScreenState extends State<ClubSignUpScreen> {
                                   });
                                 },
                               ),
-
                             ),
                             obscureText: !_isPasswordVisible,
                             validator: (value) {

@@ -11,14 +11,14 @@ import 'otp-verification/otp_verif_player.dart';
 
 class OptionalOnboarding extends StatefulWidget {
   const OptionalOnboarding({
-    super.key,
+    Key? key,
     required this.name,
     required this.dob,
     required this.email,
     required this.password,
     required this.gender,
     required this.contactNumber,
-  });
+  }) : super(key: key);
 
   final String name;
   final String dob;
@@ -67,19 +67,15 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
     }
   }
 
-  Future<PlatformFile?> _pickExperienceDocument() async {
+  Future<void> _pickExperienceDocument() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf', 'doc', 'docx'],
+      allowedExtensions: ['pdf'],
     );
     if (result != null) {
-      PlatformFile file = result.files.first;
       setState(() {
-        _experienceDoc = file;
+        _experienceDoc = result.files.first;
       });
-      return file;
-    } else {
-      return null;
     }
   }
 
@@ -126,7 +122,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
 
       if (_experienceDoc != null) {
         request.files.add(http.MultipartFile(
-          'experienceDocument',
+          'experienceDoc',
           File(_experienceDoc!.path!).readAsBytes().asStream(),
           File(_experienceDoc!.path!).lengthSync(),
           filename: _experienceDoc!.name,
