@@ -1,4 +1,3 @@
-import 'package:cric_club/start-screens/club_sign-login.dart';
 import 'package:cric_club/start-screens/login-signup.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -85,7 +84,6 @@ class _PlayerorClubState extends State<PlayerorClub> {
 
 
 
-                //organisation
                 const SizedBox(height: 16.0),
                 const Text("or", style: TextStyle(color: Colors.white)),
                 const SizedBox(height: 16.0),
@@ -97,7 +95,7 @@ class _PlayerorClubState extends State<PlayerorClub> {
                     onPressed: (){
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                            builder: (context) => const Clubjourney()),
+                            builder: (context) => const Journey()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -113,7 +111,7 @@ class _PlayerorClubState extends State<PlayerorClub> {
                           height: 48.0,
                           alignment: Alignment.center,
                           child: Text(
-                            "Organisation",
+                            "Host",
                             style: GoogleFonts.poppins(
                               color: customColor2,
                               fontSize: 16,

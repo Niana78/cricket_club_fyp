@@ -5,5 +5,6 @@ class CricClubAssets {
 
   //icons
   static String googlesignin = 'assets/icons/google-icon.png';
-
+  static String share = 'assets/icons/sharee.png';
+  static String invite = 'assets/icons/invite.png';
 }

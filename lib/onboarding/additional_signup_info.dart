@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cric_club/dashboard/player/home_player.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../configurations/config.dart';
+import '../start-screens/login-signup.dart';
 import 'otp-verification/otp_verif_player.dart';
 
 class OptionalOnboarding extends StatefulWidget {
@@ -37,6 +40,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
   String? _country;
   String? _category;
   final _formKey = GlobalKey<FormState>();
+  String? token;
   final List<String> _organizations = [];
   final TextEditingController _organizationController = TextEditingController();
   final TextEditingController _cnicController = TextEditingController();
@@ -135,14 +139,27 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
       print("Request URL: $registration");
       print("Request Body: $reqBody");
       print("Response Status Code: ${response.statusCode}");
-      print("Response Body: ${await response.stream.bytesToString()}");
+      var responseBody = await response.stream.bytesToString();
+      print("Response Body: $responseBody");
 
       if (response.statusCode == 201) {
+        var jsonResponse = jsonDecode(responseBody);
+
+        var userId = jsonResponse['user']['_id'];
+        var email = jsonResponse['user']['email'];
+
+        await storeUserId(userId, email);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("User registered successfully!")),
         );
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => EmailVerification(email: widget.email)),
+          MaterialPageRoute(
+            builder: (context) => PlayerHome(
+              token: token,
+              logout: _logout,
+            ),
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -160,6 +177,31 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
       });
     }
   }
+
+
+  Future<void> storeUserId(String userId, String email) async {
+    try {
+      // Debugging print to verify function is being called
+      print('Attempting to store user ID: $userId');
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      print('SharedPreferences initialized.');
+
+      await prefs.setString('_id', userId);
+      await prefs.setString('email', email);
+      String? storedId = prefs.getString('_id');
+      String? storedemail = prefs.getString('email');
+      if (storedId == userId && storedemail == email) {
+        print('User ID $userId has been saved successfully and $email too.');
+      } else {
+        print('Failed to save User ID $userId.');
+      }
+    } catch (e) {
+      print('Failed to store user ID: $e');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -515,4 +557,20 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
       ),
     );
   }
+  Future<void> _logout(BuildContext context) async {
+    print('Logging out...');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    print('Token removed from SharedPreferences.');
+
+    setState(() {
+      token = null;
+    });
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const Journey()),
+    );
+  }
+
 }

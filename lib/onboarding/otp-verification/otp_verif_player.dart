@@ -1,7 +1,10 @@
 import 'package:cric_club/configurations/config.dart';
+import 'package:cric_club/constants/const_exports.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../../dashboard/player/home_player.dart';
 
 class EmailVerification extends StatefulWidget {
   final String email;
@@ -46,6 +49,7 @@ class _EmailVerificationState extends State<EmailVerification> {
     });
 
     if (response.statusCode == 200) {
+      print(response);
       final responseData = jsonDecode(response.body);
       setState(() {
         _otpHash = responseData['data'];
@@ -88,7 +92,7 @@ class _EmailVerificationState extends State<EmailVerification> {
     if (response.statusCode == 200) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SuccessScreen()),
+        MaterialPageRoute(builder: (context) => PlayerHome()),
       );
     } else {
       setState(() {
@@ -107,7 +111,8 @@ class _EmailVerificationState extends State<EmailVerification> {
     return Scaffold(
       backgroundColor: customColor2,
       appBar: AppBar(
-        title: const Text('Email Verification'),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Email Verification', style: TextStyle(color: Colors.white)),
         backgroundColor: customColor2,
       ),
       body: Center(
@@ -153,18 +158,3 @@ class _EmailVerificationState extends State<EmailVerification> {
   }
 }
 
-class SuccessScreen extends StatelessWidget {
-  const SuccessScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Success'),
-      ),
-      body: const Center(
-        child: Text('OTP Verified Successfully!'),
-      ),
-    );
-  }
-}

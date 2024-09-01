@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../configurations/config.dart';
 
@@ -27,24 +28,16 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
 
   void loginUser() async {
     try {
-      if (_emailController != null &&
-          _passwordController != null &&
-          _emailController.text.isNotEmpty &&
+      if (_emailController.text.isNotEmpty &&
           _passwordController.text.isNotEmpty) {
         var reqBody = {
           "email": _emailController.text,
           "password": _passwordController.text
         };
 
-        var response = await http.post(Uri.parse('$login'),
+        var response = await http.post(Uri.parse(login),
             headers: {"Content-Type": "application/json"},
             body: jsonEncode(reqBody));
-
-        print("Request URL: $login");
-        print("Request Body: $reqBody");
-        print("Response Status Code: ${response.statusCode}");
-        print("Response Body: ${response.body}");
-
         if (response.statusCode == 200) {
           var jsonResponse = jsonDecode(response.body);
 
@@ -52,12 +45,12 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
             if (jsonResponse['status']) {
               var myToken = jsonResponse['token'];
 
-              // Decode the token to get userId
               Map<String, dynamic> decodedToken = JwtDecoder.decode(myToken);
               var userId = decodedToken['_id'];
+              var email = decodedToken['email'];
+              await storeUserId(userId, email);
 
               if (userId != null) {
-
 
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => PlayerHome()));
@@ -66,15 +59,14 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
+                const SnackBar(
                   content: Text("Invalid email or password. Please try again."),
                 ),
               );
             }
           } else {
-            print("Unexpected JSON structure: $jsonResponse");
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text("Unexpected response from server"),
               ),
             );
@@ -82,7 +74,7 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
         } else {
           print("HTTP request failed with status code: ${response.statusCode}");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               content: Text("HTTP request failed. Please try again."),
             ),
           );
@@ -91,10 +83,33 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
     } catch (error) {
       print("Error: $error");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Wrong email or password. Please try again."),
         ),
       );
+    }
+  }
+
+  Future<void> storeUserId(String userId, String email) async {
+    try {
+      // Debugging print to verify function is being called
+      print('Attempting to store user ID: $userId');
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+
+      print('SharedPreferences initialized.');
+
+      await prefs.setString('_id', userId);
+      await prefs.setString('email', email);
+      String? storedId = prefs.getString('_id');
+      String? storedemail = prefs.getString('email');
+      if (storedId == userId && storedemail == email) {
+        print('User ID $userId has been saved successfully and $email too.');
+      } else {
+        print('Failed to save User ID $userId.');
+      }
+    } catch (e) {
+      print('Failed to store user ID: $e');
     }
   }
 
