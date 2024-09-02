@@ -22,11 +22,14 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
 
   @override
   void initState() {
+    print("initState called");
     super.initState();
     _fetchUserDetails();
+    // _mockUserData(); // Uncomment this line to use mock data
   }
 
   Future<void> _fetchUserDetails() async {
+    print("Fetching user details..."); // This should print first
     try {
       final response = await http.get(Uri.parse('$getuserdetails${widget.userId}'));
 
@@ -35,12 +38,13 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
+        print("Decoded JSON: $data");
 
         if (data['status'] == true && data.containsKey('user')) {
           final user = data['user'];
 
+          print("User Data: $user"); // Print user data
           final String? profilePictureUrl = user['profilePictureUrl'];
-          print("Profile Picture URL: $profilePictureUrl");
           final String fullProfilePictureUrl = profilePictureUrl != null
               ? '$baseurl$profilePictureUrl'.replaceAll('\\', '/')
               : _profilePictureUrl;
@@ -50,6 +54,8 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
             _isLoading = false;
             _profilePictureUrl = fullProfilePictureUrl;
           });
+
+          print("Profile picture URL set: $_profilePictureUrl");
         } else {
           print('Invalid response structure or status.');
           setState(() {
@@ -68,6 +74,31 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
         _isLoading = false;
       });
     }
+  }
+
+  void _mockUserData() {
+    _userData = {
+      'name': 'John Doe',
+      'role': 'Batsman',
+      'team': 'National Team',
+      'profilePictureUrl': '/profile/johndoe.png',
+      'matches': 100,
+      'runs': 4000,
+      'wickets': 150,
+      'average': 50.0,
+      'strikeRate': 120.5,
+      'bestScore': '200*',
+      'matchLog': [
+        {'match': 'Match 1', 'runs': '50', 'wickets': '2', 'performance': 'Good'},
+        {'match': 'Match 2', 'runs': '75', 'wickets': '3', 'performance': 'Very Good'},
+        {'match': 'Match 3', 'runs': '100', 'wickets': '1', 'performance': 'Excellent'},
+      ],
+      'achievements': ['Man of the Match', 'Best Batsman', 'Century'],
+    };
+    print("Mock Data: $_userData");
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -114,7 +145,7 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
           radius: 40,
           backgroundImage: _profilePictureUrl.isNotEmpty
               ? NetworkImage(Uri.encodeFull(_profilePictureUrl))
-              : AssetImage('assets/default_avatar.png') as ImageProvider,
+              : AssetImage('assets/images/main_logo.png') as ImageProvider,
         ),
         SizedBox(width: 16.0),
         Column(
@@ -189,56 +220,74 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
   }
 
   Widget _buildCharts() {
-    List<FlSpot> chartData = [];
-    List<dynamic>? matchLog = _userData?['matchLog'] ?? [];
+    if (_userData == null || _userData?['matchLog'] == null) {
+      print('User data or match log is null.');
+      return Text('No match data available.');
+    }
 
-    // Prepare the data for the chart
-    for (int i = 0; i < matchLog!.length; i++) {
+    List<dynamic>? matchLog = _userData?['matchLog'];
+    if (matchLog is! List) {
+      print("Match log is not a list: $matchLog");
+      return Text('Invalid match log data.');
+    }
+
+    List<FlSpot> chartData = [];
+    for (int i = 0; i < matchLog.length; i++) {
       final log = matchLog[i];
       final runs = double.tryParse(log['runs'].toString()) ?? 0.0;
       chartData.add(FlSpot(i.toDouble(), runs));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Performance Over Time',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        SizedBox(height: 8.0),
-        Container(
-          height: 200,
-          child: LineChart(
-            LineChartData(
-              lineBarsData: [
-                LineChartBarData(
-                  spots: chartData,
-                  isCurved: true,
-                  color: Colors.blue,
-                  barWidth: 4,
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: Colors.blue.withOpacity(0.3),
-                  ),
-                  dotData: FlDotData(show: false),
-                ),
-              ],
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true),
-                ),
-              ),
-              borderData: FlBorderData(
+    if (chartData.length < 2) {
+      chartData.add(FlSpot(1, chartData[0].y));
+    }
+
+    return SizedBox(
+      height: 300,
+      child: LineChart(
+        LineChartData(
+          minX: 0,
+          maxX: chartData.length.toDouble() - 1,
+          minY: 0,
+          maxY: chartData.map((e) => e.y).reduce((a, b) => a > b ? a : b) + 10,
+          lineBarsData: [
+            LineChartBarData(
+              spots: chartData,
+              isCurved: true,
+              color: Colors.blue,
+              barWidth: 4,
+              belowBarData: BarAreaData(
                 show: true,
-                border: Border.all(color: Colors.black12, width: 1),
+                color: Colors.blue.withOpacity(0.3),
               ),
-              gridData: FlGridData(show: true),
+              dotData: FlDotData(show: false),
+            ),
+          ],
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(value.toString());
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(value.toString());
+                },
+              ),
             ),
           ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: Colors.black12, width: 1),
+          ),
+          gridData: FlGridData(show: true),
         ),
-      ],
+      ),
     );
   }
 

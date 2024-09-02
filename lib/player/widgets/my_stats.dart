@@ -50,6 +50,9 @@ class _MyStatisticsScreenState extends State<MyStatisticsScreen> {
               ? '$baseurl$profilePictureUrl'.replaceAll('\\', '/')
               : _profilePictureUrl;
 
+          // Print all user data received
+          print("User data received: $user");
+
           setState(() {
             _userData = user;
             _isLoading = false;
@@ -192,55 +195,74 @@ class _MyStatisticsScreenState extends State<MyStatisticsScreen> {
   }
 
   Widget _buildCharts() {
-    List<FlSpot> chartData = [];
-    List<dynamic>? matchLog = _userData?['matchLog'] ?? [];
+    if (_userData == null || _userData?['matchLog'] == null) {
+      print('User data or match log is null.');
+      return Text('No match data available.');
+    }
 
-    for (int i = 0; i < matchLog!.length; i++) {
+    List<dynamic>? matchLog = _userData?['matchLog'];
+    if (matchLog is! List) {
+      print("Match log is not a list: $matchLog");
+      return Text('Invalid match log data.');
+    }
+
+    List<FlSpot> chartData = [];
+    for (int i = 0; i < matchLog.length; i++) {
       final log = matchLog[i];
       final runs = double.tryParse(log['runs'].toString()) ?? 0.0;
       chartData.add(FlSpot(i.toDouble(), runs));
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Performance Over Time',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        SizedBox(height: 8.0),
-        Container(
-          height: 200,
-          child: LineChart(
-            LineChartData(
-              lineBarsData: [
-                LineChartBarData(
-                  spots: chartData,
-                  isCurved: true,
-                  color:Colors.blue,
-                  barWidth: 4,
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: Colors.blue.withOpacity(0.3),
-                  ),
-                  dotData: FlDotData(show: false),
-                ),
-              ],
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true),
-                ),
-              ),
-              borderData: FlBorderData(
+    if (chartData.length < 2) {
+      chartData.add(FlSpot(1, chartData[0].y));
+    }
+
+    return SizedBox(
+      height: 300,
+      child: LineChart(
+        LineChartData(
+          minX: 0,
+          maxX: chartData.length.toDouble() - 1,
+          minY: 0,
+          maxY: chartData.map((e) => e.y).reduce((a, b) => a > b ? a : b) + 10,
+          lineBarsData: [
+            LineChartBarData(
+              spots: chartData,
+              isCurved: true,
+              color: Colors.blue,
+              barWidth: 4,
+              belowBarData: BarAreaData(
                 show: true,
-                border: Border.all(color: Colors.black12, width: 1),
+                color: Colors.blue.withOpacity(0.3),
               ),
-              gridData: FlGridData(show: true),
+              dotData: FlDotData(show: false),
+            ),
+          ],
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(value.toString());
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  return Text(value.toString());
+                },
+              ),
             ),
           ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border.all(color: Colors.black12, width: 1),
+          ),
+          gridData: FlGridData(show: true),
         ),
-      ],
+      ),
     );
   }
 

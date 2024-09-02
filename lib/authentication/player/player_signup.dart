@@ -235,6 +235,7 @@ class _PlayerSignUpScreenState extends State<PlayerSignUpScreen> {
                           ),
                           const SizedBox(height: 16,),
                           TextFormField(
+                            // keyboardType: TextInputType.number,
                             style: const TextStyle(color: Colors.black),
                             controller: _contactNumberController,
                             decoration: const InputDecoration(

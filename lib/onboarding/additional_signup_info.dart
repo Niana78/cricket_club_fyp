@@ -238,6 +238,7 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                         shrinkWrap: true,
                         children: [
                           TextFormField(
+                            // keyboardType: TextInputType.number,
                             controller: _cnicController,
                             style: const TextStyle(color: Colors.black),
                             decoration: const InputDecoration(
@@ -369,9 +370,9 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                             }).toList(),
                             selectedItemBuilder: (BuildContext context) {
                               return <String>[
-                                'Country 1',
-                                'Country 2',
-                                'Country 3'
+                                'Pakistan',
+                                'Afghanistan',
+                                'Kashmir'
                               ].map<Widget>((String value) {
                                 return Text(
                                   value,
