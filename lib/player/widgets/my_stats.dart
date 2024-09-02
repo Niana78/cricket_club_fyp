@@ -196,14 +196,12 @@ class _MyStatisticsScreenState extends State<MyStatisticsScreen> {
 
   Widget _buildCharts() {
     if (_userData == null || _userData?['matchLog'] == null) {
-      print('User data or match log is null.');
       return Text('No match data available.');
     }
 
     List<dynamic>? matchLog = _userData?['matchLog'];
-    if (matchLog is! List) {
-      print("Match log is not a list: $matchLog");
-      return Text('Invalid match log data.');
+    if (matchLog is! List || matchLog.isEmpty) {
+      return Text('No match data available.');
     }
 
     List<FlSpot> chartData = [];
@@ -213,7 +211,13 @@ class _MyStatisticsScreenState extends State<MyStatisticsScreen> {
       chartData.add(FlSpot(i.toDouble(), runs));
     }
 
-    if (chartData.length < 2) {
+    // Handle the case when chartData is empty
+    if (chartData.isEmpty) {
+      return Text('No valid run data to display.');
+    }
+
+    // Optional: if there's only one data point, add a second point to avoid single-point issues
+    if (chartData.length == 1) {
       chartData.add(FlSpot(1, chartData[0].y));
     }
 
@@ -265,7 +269,6 @@ class _MyStatisticsScreenState extends State<MyStatisticsScreen> {
       ),
     );
   }
-
   Widget _buildAchievements() {
     List<dynamic>? achievements = _userData?['achievements'] ?? [];
     return Column(

@@ -22,28 +22,20 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
 
   @override
   void initState() {
-    print("initState called");
     super.initState();
     _fetchUserDetails();
-    // _mockUserData(); // Uncomment this line to use mock data
   }
 
   Future<void> _fetchUserDetails() async {
-    print("Fetching user details..."); // This should print first
     try {
       final response = await http.get(Uri.parse('$getuserdetails${widget.userId}'));
 
-      print("Server response status: ${response.statusCode}");
-      print("Server response body: ${response.body}");
-
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        print("Decoded JSON: $data");
 
         if (data['status'] == true && data.containsKey('user')) {
           final user = data['user'];
 
-          print("User Data: $user"); // Print user data
           final String? profilePictureUrl = user['profilePictureUrl'];
           final String fullProfilePictureUrl = profilePictureUrl != null
               ? '$baseurl$profilePictureUrl'.replaceAll('\\', '/')
@@ -54,51 +46,21 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
             _isLoading = false;
             _profilePictureUrl = fullProfilePictureUrl;
           });
-
-          print("Profile picture URL set: $_profilePictureUrl");
         } else {
-          print('Invalid response structure or status.');
           setState(() {
             _isLoading = false;
           });
         }
       } else {
-        print('Failed to load user details. Status code: ${response.statusCode}');
         setState(() {
           _isLoading = false;
         });
       }
     } catch (error) {
-      print('Error fetching user details: $error');
       setState(() {
         _isLoading = false;
       });
     }
-  }
-
-  void _mockUserData() {
-    _userData = {
-      'name': 'John Doe',
-      'role': 'Batsman',
-      'team': 'National Team',
-      'profilePictureUrl': '/profile/johndoe.png',
-      'matches': 100,
-      'runs': 4000,
-      'wickets': 150,
-      'average': 50.0,
-      'strikeRate': 120.5,
-      'bestScore': '200*',
-      'matchLog': [
-        {'match': 'Match 1', 'runs': '50', 'wickets': '2', 'performance': 'Good'},
-        {'match': 'Match 2', 'runs': '75', 'wickets': '3', 'performance': 'Very Good'},
-        {'match': 'Match 3', 'runs': '100', 'wickets': '1', 'performance': 'Excellent'},
-      ],
-      'achievements': ['Man of the Match', 'Best Batsman', 'Century'],
-    };
-    print("Mock Data: $_userData");
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
@@ -123,22 +85,22 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildPlayerOverview(),
+            _buildPlayerOverview(context),
             SizedBox(height: 16.0),
-            _buildPerformanceMetrics(),
+            _buildPerformanceMetrics(context),
             SizedBox(height: 16.0),
             _buildCharts(),
             SizedBox(height: 16.0),
-            _buildAchievements(),
+            _buildAchievements(context),
             SizedBox(height: 16.0),
-            _buildMatchLog(),
+            _buildMatchLog(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPlayerOverview() {
+  Widget _buildPlayerOverview(BuildContext context) {
     return Row(
       children: [
         CircleAvatar(
@@ -148,53 +110,52 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
               : AssetImage('assets/images/main_logo.png') as ImageProvider,
         ),
         SizedBox(width: 16.0),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _userData?['name'] ?? 'N/A',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              _userData?['role'] ?? 'Batsman',
-              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
-            ),
-            Text(
-              _userData?['team'] ?? 'National Team',
-              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
-            ),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _userData?['name'] ?? 'N/A',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                _userData?['role'] ?? 'Batsman',
+                style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+              ),
+              Text(
+                _userData?['team'] ?? 'National Team',
+                style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildPerformanceMetrics() {
+  Widget _buildPerformanceMetrics(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Performance Metrics',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         SizedBox(height: 8.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildMetricCard(
-                'Matches', _userData?['matches']?.toString() ?? 'N/A'),
-            _buildMetricCard('Runs', _userData?['runs']?.toString() ?? 'N/A'),
-            _buildMetricCard(
-                'Wickets', _userData?['wickets']?.toString() ?? 'N/A'),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildMetricCard(
-                'Average', _userData?['average']?.toString() ?? 'N/A'),
-            _buildMetricCard(
-                'Strike Rate', _userData?['strikeRate']?.toString() ?? 'N/A'),
-            _buildMetricCard('Best Score', _userData?['bestScore'] ?? 'N/A'),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildMetricCard(
+                  'Matches', _userData?['matches']?.toString() ?? 'N/A'),
+              _buildMetricCard('Runs', _userData?['runs']?.toString() ?? 'N/A'),
+              _buildMetricCard(
+                  'Wickets', _userData?['wickets']?.toString() ?? 'N/A'),
+              _buildMetricCard(
+                  'Average', _userData?['average']?.toString() ?? 'N/A'),
+              _buildMetricCard(
+                  'Strike Rate', _userData?['strikeRate']?.toString() ?? 'N/A'),
+              _buildMetricCard('Best Score', _userData?['bestScore'] ?? 'N/A'),
+            ],
+          ),
         ),
       ],
     );
@@ -221,14 +182,12 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
 
   Widget _buildCharts() {
     if (_userData == null || _userData?['matchLog'] == null) {
-      print('User data or match log is null.');
       return Text('No match data available.');
     }
 
     List<dynamic>? matchLog = _userData?['matchLog'];
-    if (matchLog is! List) {
-      print("Match log is not a list: $matchLog");
-      return Text('Invalid match log data.');
+    if (matchLog is! List || matchLog.isEmpty) {
+      return Text('No match data available.');
     }
 
     List<FlSpot> chartData = [];
@@ -238,7 +197,13 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
       chartData.add(FlSpot(i.toDouble(), runs));
     }
 
-    if (chartData.length < 2) {
+    // Handle the case when chartData is empty
+    if (chartData.isEmpty) {
+      return Text('No valid run data to display.');
+    }
+
+    // Optional: if there's only one data point, add a second point to avoid single-point issues
+    if (chartData.length == 1) {
       chartData.add(FlSpot(1, chartData[0].y));
     }
 
@@ -291,7 +256,7 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
     );
   }
 
-  Widget _buildAchievements() {
+  Widget _buildAchievements(BuildContext context) {
     List<dynamic>? achievements = _userData?['achievements'] ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,10 +264,12 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
         Text('Achievements',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         SizedBox(height: 8.0),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: achievements!.map((achievement) =>
-              _buildAchievementCard(achievement)).toList(),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: achievements!.map((achievement) =>
+                _buildAchievementCard(achievement)).toList(),
+          ),
         ),
       ],
     );
@@ -326,7 +293,7 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
     );
   }
 
-  Widget _buildMatchLog() {
+  Widget _buildMatchLog(BuildContext context) {
     List<dynamic>? matchLog = _userData?['matchLog'] ?? [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,21 +301,24 @@ class _ViewOtherUserProfileState extends State<ViewOtherUserProfile> {
         Text('Match Log',
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         SizedBox(height: 8.0),
-        DataTable(
-          columns: [
-            DataColumn(label: Text('Match')),
-            DataColumn(label: Text('Runs')),
-            DataColumn(label: Text('Wickets')),
-            DataColumn(label: Text('Performance')),
-          ],
-          rows: matchLog!.map<DataRow>((log) {
-            return DataRow(cells: [
-              DataCell(Text(log['match'] ?? 'N/A')),
-              DataCell(Text(log['runs'].toString())),
-              DataCell(Text(log['wickets'].toString())),
-              DataCell(Text(log['performance'] ?? 'N/A')),
-            ]);
-          }).toList(),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            columns: [
+              DataColumn(label: Text('Match')),
+              DataColumn(label: Text('Runs')),
+              DataColumn(label: Text('Wickets')),
+              DataColumn(label: Text('Performance')),
+            ],
+            rows: matchLog!.map<DataRow>((log) {
+              return DataRow(cells: [
+                DataCell(Text(log['match'] ?? 'N/A')),
+                DataCell(Text(log['runs'].toString())),
+                DataCell(Text(log['wickets'].toString())),
+                DataCell(Text(log['performance'] ?? 'N/A')),
+              ]);
+            }).toList(),
+          ),
         ),
       ],
     );
