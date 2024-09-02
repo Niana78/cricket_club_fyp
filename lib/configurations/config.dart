@@ -27,6 +27,7 @@ const savematch = "${matchesurl}matches/users/";
 const unsavematch = "${matchesurl}matches/users/";
 const getsavedmatches = "${matchesurl}matches/users/";
 const getmatchdetailsbyid = "${matchesurl}matches/matches/";
+const addmatchstatsofteams = "${matchesurl}matches/matches/";
 
 //club
 const clublogin = "${cluburl}login";

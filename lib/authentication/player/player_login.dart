@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cric_club/change_password/forgot_password.dart';
 import 'package:cric_club/dashboard/player/home_player.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -262,7 +263,13 @@ class _PlayerLoginScreenState extends State<PlayerLoginScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordScreen(),
+                          ),
+                        );
+                      },
                       child: Text('Forgot password?',
                           style: GoogleFonts.poppins(
                               color: Colors.white, fontSize: 15)),

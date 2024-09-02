@@ -155,10 +155,8 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
         );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => PlayerHome(
-              token: token,
-              logout: _logout,
-            ),
+            builder: (context) => EmailVerification(email: widget.email,
+          ),
           ),
         );
       } else {
@@ -354,9 +352,9 @@ class _OptionalOnboardingState extends State<OptionalOnboarding> {
                               });
                             },
                             items: <String>[
-                              'Country 1',
-                              'Country 2',
-                              'Country 3'
+                              'Pakistan',
+                              'Afghanistan',
+                              'Kashmir'
                             ].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,

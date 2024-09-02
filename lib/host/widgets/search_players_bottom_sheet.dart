@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart'; // Import url_launcher for email functionality
+import 'package:url_launcher/url_launcher.dart';
 import '../../configurations/config.dart';
+import 'package:flutter/services.dart';
 
 class SearchPlayersBottomSheet extends StatefulWidget {
   const SearchPlayersBottomSheet({
@@ -92,14 +93,14 @@ class _SearchPlayersBottomSheetState extends State<SearchPlayersBottomSheet> {
             mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
-                radius: 80, // Set the size of the larger profile picture
+                radius: 80,
                 backgroundImage: NetworkImage(imageUrl),
                 child: imageUrl.isEmpty ? Text(name[0]) : null,
               ),
               const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
+                  Navigator.of(context).pop();
                 },
                 child: const Text('Close'),
               ),
@@ -128,23 +129,34 @@ Best regards,
 Cricket Club
 ''';
 
-    final Uri emailLaunchUri = Uri(
+    final Uri gmailUri = Uri(
       scheme: 'mailto',
       path: receiverEmail,
       query: 'subject=${Uri.encodeComponent('You\'re Invited to a Cricket Event!')}&body=${Uri.encodeComponent(emailBody)}',
     );
 
+    final Uri gmailAppUri = Uri(
+      scheme: 'googlegmail',
+      path: '/co',
+      queryParameters: {
+        'to': receiverEmail,
+        'subject': 'You\'re Invited to a Cricket Event!',
+        'body': emailBody,
+      },
+    );
+
     try {
-      if (await canLaunchUrl(emailLaunchUri)) {
-        await launchUrl(emailLaunchUri);
+      if (await canLaunchUrl(gmailAppUri)) {
+        await launchUrl(gmailAppUri, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(gmailUri)) {
+        await launchUrl(gmailUri, mode: LaunchMode.externalApplication);
       } else {
-        throw 'Could not launch email client';
+        throw PlatformException(code: 'EMAIL_CLIENT_NOT_AVAILABLE', message: 'No email client available');
       }
     } catch (e) {
       print('Error opening email client: $e');
     }
   }
-
 
   void _showInviteDialog(String playerName, String playerEmail) {
     showDialog(

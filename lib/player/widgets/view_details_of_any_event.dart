@@ -1,8 +1,9 @@
 import 'package:cric_club/constants/const_exports.dart';
+import 'package:cric_club/view_match_stats/view_match_stats.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:cric_club/models/event_model.dart';
 import '../../configurations/config.dart';
 
 class ViewDetailsOfAnyEvent extends StatefulWidget {
@@ -18,9 +19,10 @@ class ViewDetailsOfAnyEvent extends StatefulWidget {
     required this.host,
     required this.matchId,
     required this.userId,
+    required this.playerStats,
   });
 
-
+final List<PlayerStats> playerStats;
   final String host;
   final String name;
   final String location;
@@ -303,7 +305,27 @@ Cricket Club
           ? Padding(
         padding: const EdgeInsets.all(8.0),
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ViewMatchStats(
+                  matchEvent: Event(
+                    id: widget.matchId,
+                    name: widget.name,
+                    location: widget.location,
+                    matchDate: widget.matchDate,
+                    totalPlayers: widget.totalPlayers,
+                    createdBy: widget.createdBy,
+                    matchTime: widget.matchTime,
+                    notes: widget.notes,
+                    host: widget.host,
+                    playerStats: widget.playerStats,
+                  ),
+                ),
+              ),
+            );
+          },
           child: Text("View Stats"),
           style: ElevatedButton.styleFrom(
             backgroundColor: CricketClubTheme().maincolor,

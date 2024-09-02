@@ -251,6 +251,8 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> with Single
               subtitle: Text(event.location),
               trailing: Icon(Icons.arrow_forward_ios, color: CricketClubTheme().maincolor),
               onTap: () {
+                print("this is the stst ${event.playerStats}");
+                print("this is the stst ${event.playerStats}");
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -265,6 +267,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> with Single
                       host: event.host,
                       matchId: event.id,
                       userId: userId,
+                      playerStats: event.playerStats,
                     ),
                   ),
                 );

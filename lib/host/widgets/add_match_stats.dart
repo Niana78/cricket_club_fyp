@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../configurations/config.dart';
 import '../../constants/color_theme.dart';
 
 class AddMatchStats extends StatefulWidget {
-  const AddMatchStats({super.key});
+  final String matchId;
+
+  const AddMatchStats({super.key, required this.matchId});
 
   @override
   State<AddMatchStats> createState() => _AddMatchStatsState();
@@ -11,40 +16,27 @@ class AddMatchStats extends StatefulWidget {
 class _AddMatchStatsState extends State<AddMatchStats> {
   final CricketClubTheme theme = CricketClubTheme();
 
-  final List<PlayerStats> teamAStats = List.generate(
-    11,
-        (index) => PlayerStats(playerName: 'Team A - Player ${index + 1}'),
-  );
+  List<PlayerStats> teamAStats = [];
+  List<PlayerStats> teamBStats = [];
 
-  final List<PlayerStats> teamBStats = List.generate(
-    11,
-        (index) => PlayerStats(playerName: 'Team B - Player ${index + 1}'),
-  );
-
-  // Match summary variables
-  int totalRunsTeamA = 0;
-  int totalWicketsTeamA = 0;
-  int totalOversTeamA = 0;
-
-  int totalRunsTeamB = 0;
-  int totalWicketsTeamB = 0;
-  int totalOversTeamB = 0;
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with empty PlayerStats objects for each team member
+    teamAStats = List.generate(11, (index) => PlayerStats(playerName: ''));
+    teamBStats = List.generate(11, (index) => PlayerStats(playerName: ''));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Match Stats',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Match Stats', style: TextStyle(color: Colors.white)),
         backgroundColor: theme.maincolor,
         actions: [
           IconButton(
-            icon: const Icon(Icons.save, color: Colors.white,),
-            onPressed: () {
-              // Logic to save the stats
-            },
+            icon: const Icon(Icons.save, color: Colors.white),
+            onPressed: _submitMatchStats,
           ),
         ],
       ),
@@ -59,12 +51,10 @@ class _AddMatchStatsState extends State<AddMatchStats> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.maincolor, // Button color
-                  foregroundColor: Colors.white, // Text color
+                  backgroundColor: theme.maincolor,
+                  foregroundColor: Colors.white,
                 ),
-                onPressed: () {
-                  // Logic to submit the stats
-                },
+                onPressed: _submitMatchStats,
                 child: const Text('Submit Stats'),
               ),
             ],
@@ -84,7 +74,6 @@ class _AddMatchStatsState extends State<AddMatchStats> {
         ),
         const SizedBox(height: 10),
         _buildPlayerStatsList(playerStats),
-        _buildMatchSummary(teamName),
       ],
     );
   }
@@ -103,147 +92,135 @@ class _AddMatchStatsState extends State<AddMatchStats> {
   Widget _buildPlayerCard(PlayerStats player) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ExpansionTile(
-        title: Row(
+      elevation: 2.0,
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Checkbox(
-              value: player.didPlay,
-              onChanged: (value) {
-                setState(() {
-                  player.didPlay = value ?? false;
-                });
-              },
+            TextField(
+              controller: player.nameController,
+              decoration: const InputDecoration(labelText: "Player Name"),
             ),
-            Text(player.playerName, style: TextStyle(color: theme.maincolor)),
+            Row(
+              children: [
+                Expanded(child: _buildStatField(label: "Runs", controller: player.runsController)),
+                const SizedBox(width: 10),
+                Expanded(child: _buildStatField(label: "Balls Faced", controller: player.ballsFacedController)),
+              ],
+            ),
+            Row(
+              children: [
+                Expanded(child: _buildStatField(label: "Wickets", controller: player.wicketsController)),
+                const SizedBox(width: 10),
+                Expanded(child: _buildStatField(label: "Overs Bowled", controller: player.oversBowledController)),
+              ],
+            ),
           ],
         ),
-        children: player.didPlay
-            ? [
-          _buildStatField(
-            label: "Runs",
-            value: player.runs.toString(),
-            onChanged: (val) => setState(() => player.runs = int.tryParse(val) ?? 0),
-          ),
-          _buildStatField(
-            label: "Balls Faced",
-            value: player.ballsFaced.toString(),
-            onChanged: (val) => setState(() => player.ballsFaced = int.tryParse(val) ?? 0),
-          ),
-          _buildStatField(
-            label: "Wickets",
-            value: player.wickets.toString(),
-            onChanged: (val) => setState(() => player.wickets = int.tryParse(val) ?? 0),
-          ),
-          _buildStatField(
-            label: "Overs Bowled",
-            value: player.oversBowled.toString(),
-            onChanged: (val) => setState(() => player.oversBowled = int.tryParse(val) ?? 0),
-          ),
-        ]
-            : [],
       ),
     );
   }
 
-  Widget _buildStatField({
-    required String label,
-    required String value,
-    required Function(String) onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: label,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: onChanged,
-              controller: TextEditingController(text: value),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildStatField({required String label, required TextEditingController controller}) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
     );
   }
 
-  Widget _buildMatchSummary(String teamName) {
-    int totalRuns, totalWickets, totalOvers;
-    if (teamName == "Team A") {
-      totalRuns = totalRunsTeamA;
-      totalWickets = totalWicketsTeamA;
-      totalOvers = totalOversTeamA;
-    } else {
-      totalRuns = totalRunsTeamB;
-      totalWickets = totalWicketsTeamB;
-      totalOvers = totalOversTeamB;
+  Future<void> _submitMatchStats() async {
+    try {
+      List<Map<String, dynamic>> stats = [];
+
+      // Collect stats from Team A
+      teamAStats.forEach((player) {
+        if (player.nameController.text.isNotEmpty) {
+          stats.add(player.toJson());
+        }
+      });
+
+      // Collect stats from Team B
+      teamBStats.forEach((player) {
+        if (player.nameController.text.isNotEmpty) {
+          stats.add(player.toJson());
+        }
+      });
+
+      // Check if stats array is empty
+      if (stats.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter stats for at least one player before submitting.')),
+        );
+        return;
+      }
+
+      final uri = Uri.parse('$addmatchstatsofteams${widget.matchId}/stats');
+      final body = jsonEncode(stats);
+
+      print("URI: $uri");
+      print("Match ID: ${widget.matchId}");
+      print("Body: $body");
+
+      final response = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Stats submitted successfully!')),
+        );
+      } else {
+        print("Response Code: ${response.statusCode}");
+        print("Response Body: ${response.body}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to submit stats.')),
+        );
+      }
+    } catch (error) {
+      print("Error: $error");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $error')),
+      );
     }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('$teamName Summary', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        _buildStatField(
-          label: "Total Runs",
-          value: totalRuns.toString(),
-          onChanged: (val) {
-            setState(() {
-              if (teamName == "Team A") {
-                totalRunsTeamA = int.tryParse(val) ?? 0;
-              } else {
-                totalRunsTeamB = int.tryParse(val) ?? 0;
-              }
-            });
-          },
-        ),
-        _buildStatField(
-          label: "Total Wickets",
-          value: totalWickets.toString(),
-          onChanged: (val) {
-            setState(() {
-              if (teamName == "Team A") {
-                totalWicketsTeamA = int.tryParse(val) ?? 0;
-              } else {
-                totalWicketsTeamB = int.tryParse(val) ?? 0;
-              }
-            });
-          },
-        ),
-        _buildStatField(
-          label: "Total Overs",
-          value: totalOvers.toString(),
-          onChanged: (val) {
-            setState(() {
-              if (teamName == "Team A") {
-                totalOversTeamA = int.tryParse(val) ?? 0;
-              } else {
-                totalOversTeamB = int.tryParse(val) ?? 0;
-              }
-            });
-          },
-        ),
-      ],
-    );
   }
 }
 
 class PlayerStats {
-  final String playerName;
-  bool didPlay;
+  String playerName;
   int runs;
   int ballsFaced;
   int wickets;
   int oversBowled;
 
+  TextEditingController nameController;
+  TextEditingController runsController;
+  TextEditingController ballsFacedController;
+  TextEditingController wicketsController;
+  TextEditingController oversBowledController;
+
   PlayerStats({
     required this.playerName,
-    this.didPlay = false,
     this.runs = 0,
     this.ballsFaced = 0,
     this.wickets = 0,
     this.oversBowled = 0,
-  });
+  })  : nameController = TextEditingController(text: playerName),
+        runsController = TextEditingController(text: runs.toString()),
+        ballsFacedController = TextEditingController(text: ballsFaced.toString()),
+        wicketsController = TextEditingController(text: wickets.toString()),
+        oversBowledController = TextEditingController(text: oversBowled.toString());
+
+  Map<String, dynamic> toJson() {
+    return {
+      "playerName": nameController.text,
+      "runs": int.tryParse(runsController.text) ?? 0,
+      "ballsFaced": int.tryParse(ballsFacedController.text) ?? 0,
+      "wickets": int.tryParse(wicketsController.text) ?? 0,
+      "oversBowled": int.tryParse(oversBowledController.text) ?? 0,
+    };
+  }
 }

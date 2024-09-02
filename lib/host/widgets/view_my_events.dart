@@ -17,8 +17,11 @@ class Event {
   final String matchTime;
   final String host;
   final String notes;
+  final String id;
+
 
   Event({
+    required this.id,
     required this.name,
     required this.location,
     required this.matchDate,
@@ -31,6 +34,7 @@ class Event {
 
   factory Event.fromJson(Map<String, dynamic> json) {
     return Event(
+      id: json['_id'] ?? '',
       host:json['hostName'] ?? 'Javeria',
       name: json['matchName'] ?? '',
       location: json['matchLocation'] ?? '',
@@ -172,7 +176,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => AddMatchStats()),
+                      MaterialPageRoute(builder: (context) => AddMatchStats(matchId: event.id,)),
                     );
                   },
                 ),

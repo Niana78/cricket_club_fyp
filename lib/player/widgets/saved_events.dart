@@ -184,6 +184,7 @@ class _SavedEventsState extends State<SavedEvents> {
                   host: event.host,
                   matchId: event.id,
                   userId: _userId!,
+                  playerStats: event.playerStats,
                 ),
               ),
             );

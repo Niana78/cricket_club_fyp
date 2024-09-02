@@ -1,6 +1,10 @@
 import 'package:cric_club/notifications.dart';
 import 'package:cric_club/player/widgets/profile_managemnet.dart';
 import 'package:cric_club/settings/delete_acc.dart';
+import 'package:cric_club/settings/faqs.dart';
+import 'package:cric_club/settings/privacy.dart';
+import 'package:cric_club/settings/term_of_services.dart';
+import 'package:cric_club/settings/version_update_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -165,7 +169,15 @@ class _SettingScreenState extends State<SettingScreen> {
                     ),
                   );
                 },),
-                _buildSetting('Privacy and Security', Icons.security),
+                _buildSetting('Privacy and Security', Icons.security,onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          PrivacyPolicyScreen(),
+                    ),
+                  );
+                }),
               ]),
               _buildDivider(),
               _buildSection('General', [
@@ -194,18 +206,33 @@ class _SettingScreenState extends State<SettingScreen> {
               ]),
               _buildDivider(),
               _buildSection('About', [
-                _buildSetting('Terms and Services', Icons.description),
+                _buildSetting('Terms and Services', Icons.description, onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => TermsOfServiceScreen()),
+                  );
+                }),
                 _buildSetting('Help and Support', Icons.help, onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => HelpandSupport()),
                   );
                 }),
-                _buildSetting('FAQs', Icons.question_answer),
+                _buildSetting('FAQs', Icons.question_answer, onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => FaqScreen()),
+                  );
+                }),
               ]),
               _buildDivider(),
               _buildSection('Other', [
-                _buildSetting('Version and Update', Icons.system_update),
+                _buildSetting('Version and Update', Icons.system_update, onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => VersionUpdateScreen()),
+                  );
+                }),
                 _buildSetting('Logout', Icons.exit_to_app, onTap: () {
                   _logout(context);
 
@@ -296,15 +323,15 @@ class _SettingScreenState extends State<SettingScreen> {
 class SettingSearchDelegate extends SearchDelegate<String> {
   final List<Map<String, dynamic>> settings = [
     {'title': 'My Account', 'icon': Icons.account_circle, 'widget': ProfileManagementScreen()},
-    {'title': 'Privacy and Security', 'icon': Icons.security, 'widget': null},
+    {'title': 'Privacy and Security', 'icon': Icons.security, 'widget':PrivacyPolicyScreen()},
     {'title': 'Payments', 'icon': Icons.payment, 'widget': null},
     {'title': 'Notifications', 'icon': Icons.notifications, 'widget': Notifications()},
     {'title': 'Account Deletion', 'icon': Icons.delete_forever_outlined, 'widget': DeleteAccount()},
     {'title': 'Dark Mode', 'icon': Icons.dark_mode, 'widget': null},
     {'title': 'Change Password', 'icon': Icons.remove_red_eye, 'widget': ChangePasswordScreen()},
-    {'title': 'Terms and Services', 'icon': Icons.description, 'widget': null},
+    {'title': 'Terms and Services', 'icon': Icons.description, 'widget': TermsOfServiceScreen()},
     {'title': 'Help and Support', 'icon': Icons.help, 'widget': HelpandSupport()},
-    {'title': 'FAQs', 'icon': Icons.question_answer, 'widget': null},
+    {'title': 'FAQs', 'icon': Icons.question_answer, 'widget': FaqScreen()},
     {'title': 'Version and Update', 'icon': Icons.system_update, 'widget': null},
     {'title': 'Logout', 'icon': Icons.exit_to_app, 'widget': null},
   ];
