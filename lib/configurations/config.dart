@@ -1,7 +1,7 @@
-const url='http://192.168.7.105:5000/api/users/';
-const baseurl='http://192.168.7.105:5000/';
-const cluburl='http://192.168.7.105:5000/api/clubs/';
-const matchesurl='http://192.168.7.105:5000/api/';
+const url='http://192.168.7.107:5000/api/users/';
+const baseurl='http://192.168.7.107:5000/';
+const cluburl='http://192.168.7.107:5000/api/clubs/';
+const matchesurl='http://192.168.7.107:5000/api/';
 
 //player
 const registration = "${url}signup";
@@ -28,7 +28,7 @@ const unsavematch = "${matchesurl}matches/users/";
 const getsavedmatches = "${matchesurl}matches/users/";
 const getmatchdetailsbyid = "${matchesurl}matches/matches/";
 const addmatchstatsofteams = "${matchesurl}matches/matches/";
-
+//club ips are no longer needed
 //club
 const clublogin = "${cluburl}login";
 const clubregistration ="${cluburl}signup";
