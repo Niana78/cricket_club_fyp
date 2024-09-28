@@ -80,7 +80,7 @@ class _UpcomingEventsScreenState extends State<UpcomingEventsScreen> with Single
       _showPopup('Error', 'An error occurred: $e');
     }
   }
-
+//method to fetch events
   Future<void> _fetchMyEvents() async {
     String? userId = await getUserId();
     if (userId == null || userId.isEmpty) {
